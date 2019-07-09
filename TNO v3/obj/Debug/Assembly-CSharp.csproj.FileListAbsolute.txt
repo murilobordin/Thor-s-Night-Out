@@ -1,0 +1,2 @@
+C:\Users\muril\Desktop\Unity\TNO v3\obj\Debug\Assembly-CSharp.csprojAssemblyReference.cache
+C:\Users\muril\Desktop\Unity\TNO v3\obj\Debug\Assembly-CSharp.csproj.CoreCompileInputs.cache

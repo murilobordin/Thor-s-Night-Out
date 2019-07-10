@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityStandardAssets.CrossPlatformInput;
 
-public class Player : MonoBehaviour
+public class Player : MonoBehaviour, ICharacterBehaviour
 {
-
     [SerializeField]
     private float speed;
     [SerializeField]
-    private bool grounded, isAlive = true, isDead = false, levelComplete = false, timeIsOver = false;
+    private bool grounded, isAlive = true, isDead = false, levelComplete = false;
     [SerializeField]
     private LayerMask layerGround;
     [SerializeField]
@@ -27,75 +26,54 @@ public class Player : MonoBehaviour
     private float knockBack;
     private PlatformEffector2D platform;
     
-
-    // Start is called before the first frame update
     void Start()
     {
         rb2D = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
         platform = FindObjectOfType<PlatformEffector2D>();
     }
-
-    // Update is called once per frame
+    
     void Update()
     {
-        
-
         if (!grounded && rb2D.velocity.y > 5f)
             grounded = false;
         else
             grounded = Physics2D.OverlapCircle(groundCheck.position, radiusCheck, layerGround);
 
-
         PlayAnimations();
 
-        FacingRight();
+        Flip();
 
         if (transform.position.y < -8f && isAlive)
         {
             PlayerDie();
         }
-
-        
-
     }
 
     private void FixedUpdate()
     {
+        move = CrossPlatformInputManager.GetAxis("Horizontal");
         if (isAlive)
         {
-            move = CrossPlatformInputManager.GetAxis("Horizontal");
-            rb2D.velocity = new Vector2(move * speed, rb2D.velocity.y);
+            MoveCharacter(move, speed); 
         }
     }
 
     void PlayAnimations()
     {
-        if(grounded && move == 0 && isAlive)
+        if (grounded && rb2D.velocity.x == 0)
         {
-            anim.Play("Idle");
-        } else if(grounded && move != 0 && isAlive)
-        {
-            anim.Play("Run");
-        } else if(!grounded && isAlive)
-        {
-            anim.Play("Jump");
-        } else if (isDead)
-        {
-            anim.Play("Die");
-        } else if (levelComplete)
-        {
-            anim.Play("Win");
+            anim.SetBool("Moving", false);
         }
-    }
+        else if (grounded && rb2D.velocity.x != 0)
+        {
+            anim.SetBool("Moving", true);
+        }
 
-    void FacingRight()
-    {
-        if (facingRight && move < 0 || !facingRight && move > 0)
-        {
-            facingRight = !facingRight;
-            transform.localScale = new Vector3(-transform.localScale.x, transform.localScale.y, transform.localScale.z);
-        }
+        if (grounded)
+            anim.SetBool("Jumping", false);
+        else if (!grounded)
+            anim.SetBool("Jumping", true);
     }
 
     public void PlayerJump()
@@ -119,14 +97,13 @@ public class Player : MonoBehaviour
     {
         if (other.CompareTag("Exit"))
         {
-            isAlive = false;
-            levelComplete = true;
-            rb2D.velocity = Vector2.zero;
+            PlayerWin();
         }
     }
 
     void PlayerDie()
     {
+        anim.SetTrigger("PlayerDie");
         isAlive = false;
         isDead = true;
         rb2D.velocity = new Vector2(0f, 0f);
@@ -136,23 +113,37 @@ public class Player : MonoBehaviour
         platform.useColliderMask = false;
     }
 
+    void PlayerWin()
+    {
+        isAlive = false;
+        levelComplete = true;
+        rb2D.velocity = Vector2.zero;
+        anim.SetTrigger("PlayerWin");
+    }
+
     void DieAnimationFinished()
     {
-        if (timeIsOver)
-        {
-            GameManager.instance.SetStatus(GameManager.GameStatus.LOSE);
-            GameManager.instance.loseMenu.SetActive(true);
-        }
-        else
-        {
             GameManager.instance.SetStatus(GameManager.GameStatus.DIE);
-            GameManager.instance.dieMenu.SetActive(true);
-        }     
+            GameManager.instance.dieMenu.SetActive(true);   
     }
 
     public void WinAnimationFinished()
     {
         GameManager.instance.SetStatus(GameManager.GameStatus.WIN);
         GameManager.instance.winMenu.SetActive(true);
+    }
+
+    public void MoveCharacter(float moveDirection, float characterSpeed)
+    {
+        rb2D.velocity = new Vector2(moveDirection * characterSpeed, rb2D.velocity.y);
+    }
+
+    public void Flip()
+    {
+        if (facingRight && move < 0 || !facingRight && move > 0)
+        {
+            facingRight = !facingRight;
+            transform.localScale = new Vector3(-transform.localScale.x, transform.localScale.y, transform.localScale.z);
+        }
     }
 }

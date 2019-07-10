@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Enemy : MonoBehaviour
+public class Enemy : MonoBehaviour, ICharacterBehaviour
 {
-    public float vel;
+    public float speed, move =1f;
     [SerializeField]
     private bool facingRight = true, grounded, isCalm = true, isAttacking = false, platformKind = true;
     [SerializeField]
@@ -20,7 +20,7 @@ public class Enemy : MonoBehaviour
     {
         rb2D = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
-        this.vel = GameManager.instance.enemySpeed;
+        this.speed = GameManager.instance.enemySpeed;
     }
 
     // Update is called once per frame
@@ -30,33 +30,19 @@ public class Enemy : MonoBehaviour
 
         if (isCalm)
         {
-            rb2D.velocity = new Vector2(vel, rb2D.velocity.y);
-
+            MoveCharacter(move, speed);
             ChangeWalk(platformKind);
         }
 
         PlayAnimation();
     }
 
-    void Flip()
-    {
-        if (facingRight && vel <= 0 || !facingRight && vel >= 0)
-        {
-            facingRight = !facingRight;
-            transform.localScale = new Vector3(-transform.localScale.x, transform.localScale.y, transform.localScale.z);
-        }
-    }
-
     void PlayAnimation()
     {
         if (isCalm)
-        {
-            anim.Play("Run");
-        }
+            anim.SetBool("Attacking",false);
         else if (isAttacking)
-        {
-            anim.Play("Attack");
-        }
+            anim.SetBool("Attacking", true);
     }
 
     private void OnCollisionEnter2D(Collision2D other)
@@ -75,17 +61,29 @@ public class Enemy : MonoBehaviour
         {
             if (!grounded)
             {
-                vel = -vel;
                 Flip();
             }
         } else if (!platformCheck)
         {
             if (grounded)
             {
-                vel = -vel;
                 Flip();
             }
         }
+    }
 
+    public void MoveCharacter(float moveDirection, float characterSpeed)
+    {
+        rb2D.velocity = new Vector2(move * speed, rb2D.velocity.y);
+    }
+
+    public void Flip()
+    {
+        move = -move;
+        if (facingRight && move <= 0 || !facingRight && move >= 0)
+        {
+            facingRight = !facingRight;
+            transform.localScale = new Vector3(-transform.localScale.x, transform.localScale.y, transform.localScale.z);
+        }
     }
 }
